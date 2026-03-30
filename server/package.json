@@ -1,0 +1,19 @@
+{
+  "name": "takeshis-data-castle-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "db:seed": "node db/seed.js",
+    "db:generate-items": "node db/generate_items.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.0",
+    "pg": "^8.20.0"
+  }
+}
