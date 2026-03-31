@@ -1,8 +1,6 @@
 # Takeshi's Data Castle 🏰
 
-What if a Japanese game show was entirely hallucinated by an AI in real-time?
-
-**Takeshi's Data Castle** is a full-stack, AI-orchestrated survival gauntlet. It pulls real-world headlines, synthesizes them into absurd physical obstacles using the Google Gemini API, and dynamically renders the scene using Google Imagen. Players must survive 5 rounds using only their wits and a randomized inventory pulled from a PostgreSQL database, all while being judged by a highly opinionated AI panel.
+An AI-powered, full-stack survival gauntlet where players must use randomized inventory items to navigate dynamic, generative obstacles based on real-world news. Built using React, Express, PostgreSQL, and the Google Gemini Ecosystem.
 
 ## ✨ Features
 
@@ -36,45 +34,45 @@ Follow these instructions to run the application locally.
 * API Keys for [Google Gemini](https://aistudio.google.com/) and [NewsAPI](https://newsapi.org/)
 
 ### 1. Clone the Repository
-\`\`\`bash
-git clone https://github.com/your-username/takeshis-data-castle.git
+```bash
+git clone [https://github.com/your-username/takeshis-data-castle.git](https://github.com/your-username/takeshis-data-castle.git)
 cd takeshis-data-castle
-\`\`\`
+```
 
 ### 2. Environment Setup
-Navigate to the \`server\` directory and create a \`.env\` file:
-\`\`\`bash
+Navigate to the `server` directory and create a `.env` file:
+```bash
 cd server
 touch .env
-\`\`\`
-Add the following variables to your \`.env\` file:
-\`\`\`env
+```
+Add the following variables to your `.env` file:
+```env
 PORT=5000
 GEMINI_API_KEY=your_gemini_api_key_here
 NEWS_API_KEY=your_news_api_key_here
 DATABASE_URL=your_postgres_connection_string
-\`\`\`
+```
 *(Note: If API keys are omitted, the server will automatically default to the local Mock Architecture so the app remains fully interactive).*
 
 ### 3. Install Dependencies
 You will need to install dependencies for both the frontend and backend. Open two terminal windows.
 
 **Terminal 1 (Backend):**
-\`\`\`bash
+```bash
 cd server
 npm install
 npm start
-\`\`\`
+```
 
 **Terminal 2 (Frontend):**
-\`\`\`bash
+```bash
 cd client
 npm install
 npm run dev
-\`\`\`
+```
 
 ### 4. Play the Game
-Open your browser and navigate to \`http://localhost:5173\`.
+Open your browser and navigate to `http://localhost:5173`.
 
 ---
 
