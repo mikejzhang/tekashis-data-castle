@@ -3,6 +3,8 @@ import type { InventoryItem, JudgeVerdict } from "./types/game-types";
 
 type AppPhase = "drafting" | "planning" | "judging" | "results";
 
+const TOTAL_ROUNDS = 5;
+
 interface StartRoundResponse {
   obstacle: string;
   items: InventoryItem[];
@@ -10,24 +12,47 @@ interface StartRoundResponse {
 
 interface JudgeResponse {
   judges: JudgeVerdict[];
+  passed: boolean;
+  gameWon: boolean;
+  gameOver: boolean;
+  roundMessage: string;
+  nextRoundNumber: number;
+  averageScore?: number;
+  roundNumber?: number;
+  totalRounds?: number;
+}
+
+interface RoundResult {
+  passed: boolean;
+  gameWon: boolean;
+  gameOver: boolean;
+  roundMessage: string;
+  nextRoundNumber: number;
+  averageScore?: number;
 }
 
 export default function App() {
   const [phase, setPhase] = useState<AppPhase>("drafting");
+  const [roundNumber, setRoundNumber] = useState(1);
   const [obstacle, setObstacle] = useState("");
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [strategy, setStrategy] = useState("");
   const [judges, setJudges] = useState<JudgeVerdict[]>([]);
+  const [roundResult, setRoundResult] = useState<RoundResult | null>(null);
   const [loadingRound, setLoadingRound] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   const selectedItem = items.find((item) => item.id === selectedItemId) ?? null;
+  const inActiveRound = Boolean(obstacle) && phase !== "results";
 
-  async function startRound() {
+  async function startRound(overrideRound?: number) {
+    const effectiveRound = overrideRound ?? roundNumber;
+    setRoundNumber(effectiveRound);
     setLoadingRound(true);
     setErrorMessage("");
     setJudges([]);
+    setRoundResult(null);
     setStrategy("");
     setSelectedItemId(null);
     setPhase("drafting");
@@ -66,6 +91,8 @@ export default function App() {
           itemId: selectedItemId,
           userStrategy: strategy,
           obstacle,
+          roundNumber,
+          totalRounds: TOTAL_ROUNDS,
         }),
       });
 
@@ -75,6 +102,14 @@ export default function App() {
 
       const data = (await response.json()) as JudgeResponse;
       setJudges(data.judges);
+      setRoundResult({
+        passed: data.passed,
+        gameWon: data.gameWon,
+        gameOver: data.gameOver,
+        roundMessage: data.roundMessage,
+        nextRoundNumber: data.nextRoundNumber,
+        averageScore: data.averageScore,
+      });
       setPhase("results");
     } catch (error) {
       const message =
@@ -93,21 +128,26 @@ export default function App() {
         <p className="mt-3 text-sm uppercase tracking-[0.3em] text-amber-200">
           AI-Powered Survival Showdown
         </p>
-        <button
-          type="button"
-          onClick={startRound}
-          disabled={loadingRound}
-          className="mt-6 flex items-center justify-center gap-2 mx-auto rounded-2xl bg-castle-red px-8 py-3 font-display text-2xl text-white shadow-card transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {loadingRound ? (
-            <>
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              AI Generating Obstacle...
-            </>
-          ) : (
-            "Start New Round"
-          )}
-        </button>
+        <p className="mt-2 text-lg font-semibold text-white">
+          Round {roundNumber} of {TOTAL_ROUNDS}
+        </p>
+        {!inActiveRound ? (
+          <button
+            type="button"
+            onClick={() => startRound(1)}
+            disabled={loadingRound}
+            className="mt-6 flex items-center justify-center gap-2 mx-auto rounded-2xl bg-castle-red px-8 py-3 font-display text-2xl text-white shadow-card transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loadingRound ? (
+              <>
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                AI Generating Obstacle...
+              </>
+            ) : (
+              "Start New Round"
+            )}
+          </button>
+        ) : null}
       </header>
 
       {errorMessage ? (
@@ -201,6 +241,31 @@ export default function App() {
       {phase === "results" ? (
         <section>
           <h2 className="mb-4 text-center font-display text-5xl text-castle-gold">Phase 3: Judge Verdict</h2>
+
+          {roundResult ? (
+            <div
+              className={`mb-8 rounded-3xl border-4 px-6 py-5 text-center ${
+                roundResult.gameWon
+                  ? "border-castle-gold bg-amber-900/30"
+                  : roundResult.passed
+                    ? "border-emerald-400 bg-emerald-900/30"
+                    : "border-red-400 bg-red-900/30"
+              }`}
+            >
+              <p className="text-lg font-body leading-relaxed text-slate-100 md:text-xl">
+                {roundResult.roundMessage}
+              </p>
+              {typeof roundResult.averageScore === "number" ? (
+                <p className="mt-3 text-sm text-amber-200">
+                  Average score:{" "}
+                  <span className="font-semibold text-white">
+                    {roundResult.averageScore.toFixed(2)}
+                  </span>
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
           <div className="grid gap-5 md:grid-cols-3">
             {judges.map((judge, index) => (
               <article
@@ -217,6 +282,41 @@ export default function App() {
               </article>
             ))}
           </div>
+
+          {roundResult ? (
+            <div className="mt-8 flex flex-wrap justify-center gap-3">
+              {roundResult.gameWon ? (
+                <button
+                  type="button"
+                  onClick={() => startRound(1)}
+                  disabled={loadingRound}
+                  className="rounded-2xl bg-gradient-to-r from-castle-gold to-amber-500 px-8 py-3 font-display text-2xl text-castle-midnight shadow-card transition hover:brightness-110 disabled:opacity-60"
+                >
+                  Play Again
+                </button>
+              ) : null}
+              {roundResult.passed && !roundResult.gameWon ? (
+                <button
+                  type="button"
+                  onClick={() => startRound(roundResult.nextRoundNumber)}
+                  disabled={loadingRound}
+                  className="rounded-2xl bg-gradient-to-r from-emerald-500 to-green-700 px-8 py-3 font-display text-2xl text-white shadow-card transition hover:brightness-110 disabled:opacity-60"
+                >
+                  Continue to Next Round
+                </button>
+              ) : null}
+              {!roundResult.passed ? (
+                <button
+                  type="button"
+                  onClick={() => startRound(1)}
+                  disabled={loadingRound}
+                  className="rounded-2xl bg-gradient-to-r from-castle-red to-rose-500 px-8 py-3 font-display text-2xl text-white shadow-card transition hover:brightness-110 disabled:opacity-60"
+                >
+                  Try Again
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </section>
       ) : null}
     </main>

@@ -42,9 +42,6 @@ export function InventoryDraft({
                 {item.name}
               </p>
               <p className="mt-2 text-sm text-slate-300">{item.description}</p>
-              <p className="mt-3 inline-block rounded-full bg-castle-red/30 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-rose-100">
-                Weirdness Lv {item.weirdness_level}
-              </p>
             </button>
           );
         })}
