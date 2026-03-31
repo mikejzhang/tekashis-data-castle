@@ -1,7 +1,15 @@
 import { useState } from "react";
 import type { InventoryItem, JudgeVerdict } from "./types/game-types";
 
-// Strict phase-based UI state machine to prevent user-triggered race conditions during asynchronous API orchestration.
+/**
+ * Phase-based UI: drafting → planning → judging → results, synchronized with async fetches so user actions
+ * cannot race the server. A full castle run is `TOTAL_ROUNDS` (5) rounds; `roundNumber` is advanced only
+ * when the player passes and continues.
+ *
+ * Obstacle imagery: `image_data` from `/api/start-round` is a large data-URI; `imageLoaded` gates visibility
+ * so a decoding placeholder shows until the browser fires `img` `onLoad`. When `image_data` is null, only
+ * the obstacle text is shown.
+ */
 type AppPhase = "drafting" | "planning" | "judging" | "results";
 
 const TOTAL_ROUNDS = 5;
@@ -28,7 +36,6 @@ interface JudgeResponse {
 interface RoundResult {
   passed: boolean;
   gameWon: boolean;
-  gameOver: boolean;
   roundMessage: string;
   nextRoundNumber: number;
   averageScore?: number;
@@ -52,6 +59,11 @@ export default function App() {
   const inActiveRound =
     phase !== "results" && (Boolean(obstacle) || loadingRound);
 
+  /**
+   * Fetches `/api/start-round` with `cache: "no-store"`, then hydrates obstacle, items, and optional `image_data`.
+   * Resets all round-scoped UI state first (including `imageLoaded` for the data-URI decode lifecycle) and
+   * forces `phase` to `drafting` so loading, item pick, and strategy steps stay consistent across retries.
+   */
   async function startRound(overrideRound?: number) {
     const effectiveRound = overrideRound ?? roundNumber;
     setRoundNumber(effectiveRound);
@@ -68,7 +80,6 @@ export default function App() {
     setPhase("drafting");
 
     try {
-      // Orchestrates the Context Generation phase by fetching dynamic news data and querying the database corpus via the Express middleware.
       const response = await fetch("/api/start-round", {
         cache: "no-store",
       });
@@ -82,7 +93,7 @@ export default function App() {
       setImageData(
         typeof data.image_data === "string" && data.image_data
           ? data.image_data
-          : null
+          : null,
       );
     } catch (error) {
       const message =
@@ -94,9 +105,8 @@ export default function App() {
   }
 
   /**
-   * Submits the player's strategy to the judge endpoint after validating required fields.
-   * On success, persists verdicts and round metadata, then transitions the UI to the results phase;
-   * on failure, surfaces an error and returns the user to planning.
+   * POST `/api/judge` with `totalRounds: TOTAL_ROUNDS` (5). On success, stores judge verdicts and round
+   * outcome summary, then moves to `results`. On failure, shows an error and returns to `planning`.
    */
   async function submitStrategy() {
     if (!selectedItemId || !strategy.trim() || !obstacle) {
@@ -128,7 +138,6 @@ export default function App() {
       setRoundResult({
         passed: data.passed,
         gameWon: data.gameWon,
-        gameOver: data.gameOver,
         roundMessage: data.roundMessage,
         nextRoundNumber: data.nextRoundNumber,
         averageScore: data.averageScore,
@@ -231,7 +240,9 @@ export default function App() {
 
       {phase === "drafting" && items.length > 0 ? (
         <section>
-          <h2 className="mb-4 font-display text-4xl text-castle-gold">Phase 1: Pick Your Item</h2>
+          <h2 className="mb-4 font-display text-4xl text-castle-gold">
+            Phase 1: Pick Your Item
+          </h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {items.map((item) => {
               const isSelected = item.id === selectedItemId;
@@ -247,7 +258,9 @@ export default function App() {
                   }`}
                 >
                   <p className="font-display text-2xl">{item.name}</p>
-                  <p className="mt-2 text-sm text-slate-200">{item.description}</p>
+                  <p className="mt-2 text-sm text-slate-200">
+                    {item.description}
+                  </p>
                 </button>
               );
             })}
@@ -268,10 +281,13 @@ export default function App() {
 
       {phase === "planning" ? (
         <section className="rounded-3xl border-4 border-blue-500/50 bg-slate-900/90 p-6">
-          <h2 className="font-display text-4xl text-castle-gold">Phase 2: Write Your Survival Strategy</h2>
+          <h2 className="font-display text-4xl text-castle-gold">
+            Phase 2: Write Your Survival Strategy
+          </h2>
           {selectedItem ? (
             <p className="mt-2 text-amber-200">
-              Selected item: <span className="font-semibold">{selectedItem.name}</span>
+              Selected item:{" "}
+              <span className="font-semibold">{selectedItem.name}</span>
             </p>
           ) : null}
           <textarea
@@ -295,14 +311,20 @@ export default function App() {
       {phase === "judging" ? (
         <section className="rounded-3xl border-4 border-castle-gold bg-slate-900/90 p-12 text-center shadow-show animate-pulse">
           <div className="mx-auto mb-6 h-16 w-16 animate-spin rounded-full border-4 border-castle-gold border-t-transparent border-b-transparent" />
-          <p className="font-display text-4xl text-castle-gold">AI Judges are evaluating your fate...</p>
-          <p className="mt-4 text-amber-200/80 uppercase tracking-widest text-sm">Please wait while the panel reviews your strategy</p>
+          <p className="font-display text-4xl text-castle-gold">
+            AI Judges are evaluating your fate...
+          </p>
+          <p className="mt-4 text-amber-200/80 uppercase tracking-widest text-sm">
+            Please wait while the panel reviews your strategy
+          </p>
         </section>
       ) : null}
 
       {phase === "results" ? (
         <section>
-          <h2 className="mb-4 text-center font-display text-5xl text-castle-gold">Phase 3: Judge Verdict</h2>
+          <h2 className="mb-4 text-center font-display text-5xl text-castle-gold">
+            Phase 3: Judge Verdict
+          </h2>
 
           {roundResult ? (
             <div
@@ -335,8 +357,12 @@ export default function App() {
                 className="rounded-3xl border-4 border-castle-gold/40 bg-gradient-to-br from-castle-navy to-blue-900 p-5 shadow-card transition hover:-translate-y-1"
               >
                 <p className="font-display text-3xl">{judge.name}</p>
-                <p className="text-xs uppercase tracking-widest text-amber-200">{judge.persona}</p>
-                <p className="mt-3 min-h-24 text-sm leading-relaxed text-slate-100">{judge.comment}</p>
+                <p className="text-xs uppercase tracking-widest text-amber-200">
+                  {judge.persona}
+                </p>
+                <p className="mt-3 min-h-24 text-sm leading-relaxed text-slate-100">
+                  {judge.comment}
+                </p>
                 <p className="mt-4 font-display text-4xl text-castle-gold">
                   {judge.score}
                   <span className="text-xl text-amber-200">/10</span>
