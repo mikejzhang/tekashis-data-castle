@@ -41,6 +41,7 @@ interface RoundResult {
   averageScore?: number;
 }
 
+
 export default function App() {
   const [phase, setPhase] = useState<AppPhase>("drafting");
   const [roundNumber, setRoundNumber] = useState(1);
@@ -58,6 +59,9 @@ export default function App() {
   const selectedItem = items.find((item) => item.id === selectedItemId) ?? null;
   const inActiveRound =
     phase !== "results" && (Boolean(obstacle) || loadingRound);
+
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 
   /**
    * Fetches `/api/start-round` with `cache: "no-store"`, then hydrates obstacle, items, and optional `image_data`.
@@ -80,7 +84,7 @@ export default function App() {
     setPhase("drafting");
 
     try {
-      const response = await fetch("/api/start-round", {
+      const response = await fetch(`${API_BASE_URL}/api/start-round`, {
         cache: "no-store",
       });
       if (!response.ok) {
@@ -117,7 +121,7 @@ export default function App() {
     setErrorMessage("");
 
     try {
-      const response = await fetch("/api/judge", {
+      const response = await fetch(`${API_BASE_URL}/api/judge`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
