@@ -301,14 +301,23 @@ export default function App() {
             placeholder="Describe your glorious, ridiculous plan..."
             className="mt-4 w-full rounded-2xl border-2 border-slate-600 bg-slate-950/80 px-4 py-3 text-base text-white placeholder:text-slate-400 focus:border-castle-gold focus:outline-none"
           />
-          <button
-            type="button"
-            onClick={submitStrategy}
-            disabled={!strategy.trim()}
-            className="mt-4 rounded-2xl bg-gradient-to-r from-castle-red to-rose-500 px-8 py-3 font-display text-2xl text-white shadow-card disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Submit to Judges
-          </button>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setPhase("drafting")}
+              className="rounded-2xl border-2 border-slate-600 bg-slate-900/50 px-8 py-3 font-display text-2xl text-slate-200 shadow-card transition hover:border-slate-500 hover:bg-slate-800 hover:text-white hover:brightness-110"
+            >
+              ← Change Item
+            </button>
+            <button
+              type="button"
+              onClick={submitStrategy}
+              disabled={!strategy.trim()}
+              className="rounded-2xl bg-gradient-to-r from-castle-red to-rose-500 px-8 py-3 font-display text-2xl text-white shadow-card disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Submit to Judges
+            </button>
+          </div>
         </section>
       ) : null}
 
