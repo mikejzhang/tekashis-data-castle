@@ -9,6 +9,7 @@ const TOTAL_ROUNDS = 5;
 interface StartRoundResponse {
   obstacle: string;
   items: InventoryItem[];
+  image_data: string | null;
   headline?: string;
 }
 
@@ -42,11 +43,14 @@ export default function App() {
   const [strategy, setStrategy] = useState("");
   const [judges, setJudges] = useState<JudgeVerdict[]>([]);
   const [roundResult, setRoundResult] = useState<RoundResult | null>(null);
+  const [imageData, setImageData] = useState<string | null>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const [loadingRound, setLoadingRound] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   const selectedItem = items.find((item) => item.id === selectedItemId) ?? null;
-  const inActiveRound = Boolean(obstacle) && phase !== "results";
+  const inActiveRound =
+    phase !== "results" && (Boolean(obstacle) || loadingRound);
 
   async function startRound(overrideRound?: number) {
     const effectiveRound = overrideRound ?? roundNumber;
@@ -55,13 +59,19 @@ export default function App() {
     setErrorMessage("");
     setJudges([]);
     setRoundResult(null);
+    setImageData(null);
+    setImageLoaded(false);
+    setObstacle("");
+    setItems([]);
     setStrategy("");
     setSelectedItemId(null);
     setPhase("drafting");
 
     try {
       // Orchestrates the Context Generation phase by fetching dynamic news data and querying the database corpus via the Express middleware.
-      const response = await fetch("/api/start-round");
+      const response = await fetch("/api/start-round", {
+        cache: "no-store",
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch round data.");
       }
@@ -69,6 +79,11 @@ export default function App() {
       const data = (await response.json()) as StartRoundResponse;
       setObstacle(data.obstacle);
       setItems(data.items);
+      setImageData(
+        typeof data.image_data === "string" && data.image_data
+          ? data.image_data
+          : null
+      );
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unexpected error occurred.";
@@ -164,11 +179,50 @@ export default function App() {
         </div>
       ) : null}
 
+      {loadingRound && phase === "drafting" ? (
+        <section className="mb-8 rounded-3xl border-4 border-dashed border-castle-gold/50 bg-slate-900/50 p-12 text-center shadow-inner animate-pulse">
+          <div
+            className="mx-auto mb-6 h-16 w-16 animate-spin rounded-full border-4 border-castle-gold border-t-transparent"
+            aria-hidden
+          />
+          <p className="font-display text-3xl text-castle-gold">
+            Synthesizing Obstacle...
+          </p>
+          <p className="mt-4 text-sm uppercase tracking-widest text-amber-200/80">
+            Generating structural and visual parameters. This takes about 10
+            seconds.
+          </p>
+        </section>
+      ) : null}
+
       {obstacle ? (
         <section className="mb-8 rounded-3xl border-4 border-castle-gold bg-gradient-to-r from-castle-red to-castle-crimson p-6 shadow-show">
           <p className="text-center text-xs uppercase tracking-[0.3em] text-amber-100">
             Current Obstacle
           </p>
+          {imageData ? (
+            <>
+              {!imageLoaded ? (
+                <div className="w-full h-64 md:h-96 rounded-2xl mb-5 border-2 border-castle-gold/50 bg-slate-900/50 flex flex-col items-center justify-center animate-pulse shadow-lg">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-castle-gold border-t-transparent mb-3" />
+                  <p className="text-amber-200/80 text-sm tracking-widest uppercase">
+                    Decoding Visual Data...
+                  </p>
+                </div>
+              ) : null}
+              <img
+                key={roundNumber}
+                src={imageData}
+                alt="Visual interpretation of the obstacle"
+                onLoad={() => setImageLoaded(true)}
+                className={
+                  imageLoaded
+                    ? "w-full h-auto max-h-96 object-cover rounded-2xl mb-5 border-2 border-castle-gold shadow-lg"
+                    : "hidden"
+                }
+              />
+            </>
+          ) : null}
           <p className="mt-3 text-center text-xl font-semibold leading-relaxed md:text-2xl">
             {obstacle}
           </p>
