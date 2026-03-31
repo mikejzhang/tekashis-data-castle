@@ -4,11 +4,11 @@ An AI-powered, full-stack survival gauntlet where players must use randomized in
 
 ## ✨ Features
 
-* **Dynamic World-Building:** Fetches live global headlines via NewsAPI and synthesizes them into absurd, context-aware game show obstacles using Gemini 2.5 Flash.
-* **Imagen Visual Synthesis:** Dynamically generates 1:1 photorealistic, high-fidelity UI assets for every obstacle on the fly, streamed directly to the frontend via a transient Base64 data pipeline.
-* **Multi-Persona AI Evaluation:** Player strategies are graded by a prompt-engineered panel of three distinct AI personas (Master Takeshi, Chaos-Chan, and The Logic Bot) to simulate subjective game show judging while mathematically smoothing variance.
-* **Hybrid Mock-Live Architecture:** Features a dual-layer orchestration strategy. If API quotas are exceeded or network outages occur, the backend seamlessly hot-swaps to a local mock dataset, ensuring zero downtime and a flawless review experience.
-* **5-Round Gauntlet:** A strict React state machine orchestrates the game loop, tracking progression, rendering immersive fallback states during AI latency, and preventing race conditions.
+* **Headline-Driven Chaos:** Real-world global news headlines are instantly transformed into ridiculous, unpredictable game show obstacles. No two games are exactly alike.
+* **Custom Visuals on the Fly:** Every new challenge generates a unique, photorealistic image in real-time, bringing the absurd situations to life right on your screen.
+* **The AI Judging Panel:** After you submit your survival strategy, a panel of three distinct AI personalities, Master Takeshi (the boss), Chaos-Chan (the wildcard), and The Logic Bot (the analyst) will grade your creativity and logic. 
+* **Unbreakable Gameplay:** The show must go on. Built-in offline fallbacks ensure the game remains fully playable even if live APIs or networks experience downtime.
+* **The 5-Round Gauntlet:** Battle your way through five continuous rounds of escalating difficulty. Pick your items wisely, adapt to the news, and try to survive to the end.
 
 ---
 
