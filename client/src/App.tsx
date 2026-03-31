@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { InventoryItem, JudgeVerdict } from "./types/game-types";
 
+// Strict phase-based UI state machine to prevent user-triggered race conditions during asynchronous API orchestration.
 type AppPhase = "drafting" | "planning" | "judging" | "results";
 
 const TOTAL_ROUNDS = 5;
@@ -8,6 +9,7 @@ const TOTAL_ROUNDS = 5;
 interface StartRoundResponse {
   obstacle: string;
   items: InventoryItem[];
+  headline?: string;
 }
 
 interface JudgeResponse {
@@ -58,6 +60,7 @@ export default function App() {
     setPhase("drafting");
 
     try {
+      // Orchestrates the Context Generation phase by fetching dynamic news data and querying the database corpus via the Express middleware.
       const response = await fetch("/api/start-round");
       if (!response.ok) {
         throw new Error("Failed to fetch round data.");
@@ -75,6 +78,11 @@ export default function App() {
     }
   }
 
+  /**
+   * Submits the player's strategy to the judge endpoint after validating required fields.
+   * On success, persists verdicts and round metadata, then transitions the UI to the results phase;
+   * on failure, surfaces an error and returns the user to planning.
+   */
   async function submitStrategy() {
     if (!selectedItemId || !strategy.trim() || !obstacle) {
       return;

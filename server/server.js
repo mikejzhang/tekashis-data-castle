@@ -62,6 +62,7 @@ async function mockLlmObstacleFromHeadline(headline) {
   return `Contestants must cross THE BRIDGE OF ${headline.slice(0, 40).toUpperCase()} while blindfolded and reciting prime numbers — but the bridge is made of opinions.`;
 }
 
+// Robust extraction pipeline to safely parse JSON arrays out of conversational LLM wrappers, ensuring deterministic data contracts for the React frontend.
 function extractJsonArray(text) {
   const match = text.match(/\[[\s\S]*\]/);
   if (!match) return null;
@@ -83,6 +84,7 @@ function isRetryableGeminiError(error) {
   );
 }
 
+// Implemented custom exponential backoff with jitter to gracefully handle Gemini API rate limits (HTTP 429/503) during high-concurrency gameplay.
 async function withGeminiRetry(task) {
   let lastError = null;
   for (let attempt = 0; attempt <= GEMINI_MAX_RETRIES; attempt += 1) {
@@ -118,6 +120,17 @@ function normalizeJudgeScores(judges) {
   });
 }
 
+/**
+ * Aggregates the three judge scores into an average, then decides round and run outcomes.
+ * The player passes the current round when that average meets or exceeds the server threshold
+ * (`PASSING_SCORE`, 7). They win the full game when they pass on the final round
+ * (`roundNumber >= totalRounds`, e.g. 5 rounds).
+ *
+ * @param {Array<{ score: number }>} judges - Normalized panel verdicts (typically three judges).
+ * @param {number} roundNumber - Current 1-based round index.
+ * @param {number} totalRounds - Total rounds in a full castle run.
+ * @returns {{ passed: boolean, averageScore: number, gameWon: boolean, gameOver: boolean, roundMessage: string }}
+ */
 function evaluateRoundOutcome(judges, roundNumber, totalRounds) {
   const scoreSum = judges.reduce((sum, judge) => sum + judge.score, 0);
   const averageScore = judges.length > 0 ? scoreSum / judges.length : 0;
@@ -179,6 +192,7 @@ function buildMasterPassJudges() {
 }
 
 async function fetchRandomInventoryItems(limit = 5) {
+  // Offloading data randomization to the PostgreSQL layer rather than the LLM to ensure schema integrity and reduce token latency.
   const { rows } = await pool.query(
     `SELECT id, name, description
      FROM inventory_items
@@ -200,6 +214,12 @@ app.get("/", (_req, res) => {
   });
 });
 
+/**
+ * GET /api/start-round
+ * Orchestrates the 'Context Generation' phase. 
+ * Aggregates real-world news, generates a dynamic AI obstacle, 
+ * and fetches a randomized item corpus from PostgreSQL.
+ */
 app.get("/api/start-round", async (_req, res) => {
   try {
     const newsApiKey = process.env.NEWS_API_KEY;
@@ -272,6 +292,12 @@ async function mockJudgePanel({ itemId, userStrategy, obstacle }) {
   ];
 }
 
+/**
+ * POST /api/judge
+ * The 'Evaluation' phase. 
+ * Processes user strategy against the obstacle using a 3-judge AI panel.
+ * Handles deterministic JSON parsing and calculates game progression state.
+ */
 app.post("/api/judge", async (req, res) => {
   try {
     const { itemId, userStrategy, obstacle, roundNumber, totalRounds } =
